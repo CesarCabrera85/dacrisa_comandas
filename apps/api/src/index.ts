@@ -18,6 +18,7 @@ import { rutasRoutes } from './routes/rutas.js';
 import { printRoutes } from './routes/print.js';
 import { eventosRoutes } from './routes/eventos.js';
 import { featureFlagsRoutes } from './routes/feature-flags.js';
+import { usuariosRoutes } from './routes/usuarios.js';
 import { startTurnoScheduler, stopTurnoScheduler } from './services/scheduler.js';
 import { imapWorker } from './services/imap-worker.js';
 
@@ -71,6 +72,7 @@ await fastify.register(rutasRoutes, { prefix: '/api/rutas' });
 await fastify.register(printRoutes, { prefix: '/api/print' });
 await fastify.register(eventosRoutes, { prefix: '/api/eventos' });
 await fastify.register(featureFlagsRoutes, { prefix: '/api/feature-flags' });
+await fastify.register(usuariosRoutes, { prefix: '/api/usuarios' });
 
 // Start server
 const PORT = parseInt(process.env.PORT || '3001', 10);

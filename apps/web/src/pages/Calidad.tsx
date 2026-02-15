@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LogoutButton from '../components/LogoutButton';
 import type { 
@@ -1119,6 +1120,7 @@ type CalidadTab = 'horarios' | 'productos' | 'rutas';
 
 function Calidad() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<CalidadTab>('horarios');
 
   const tabs: { key: CalidadTab; label: string; icon: string }[] = [
@@ -1135,7 +1137,15 @@ function Calidad() {
             <h1 className="text-3xl font-bold text-white">Vista Calidad</h1>
             <p className="text-yellow-200">Bienvenido, {user?.nombre}</p>
           </div>
-          <LogoutButton />
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/usuarios')}
+              className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors flex items-center gap-2"
+            >
+              👥 Gestión de Usuarios
+            </button>
+            <LogoutButton />
+          </div>
         </div>
 
         {/* Tabs */}

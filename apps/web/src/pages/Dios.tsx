@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LogoutButton from '../components/LogoutButton';
 import type { ImapStatus } from '@dacrisa/shared';
@@ -194,6 +195,7 @@ function ImapMonitor() {
 
 function Dios() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-900 to-red-700 p-6">
@@ -203,7 +205,21 @@ function Dios() {
             <h1 className="text-3xl font-bold text-white">Vista Administrador (DIOS)</h1>
             <p className="text-red-200">Bienvenido, {user?.nombre}</p>
           </div>
-          <LogoutButton />
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/usuarios')}
+              className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors flex items-center gap-2"
+            >
+              👥 Gestión de Usuarios
+            </button>
+            <button
+              onClick={() => navigate('/calidad')}
+              className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors flex items-center gap-2"
+            >
+              🔧 Panel Calidad
+            </button>
+            <LogoutButton />
+          </div>
         </div>
 
         <div className="space-y-6">

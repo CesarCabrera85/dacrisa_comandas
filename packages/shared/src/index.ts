@@ -55,6 +55,45 @@ export interface ApiError {
   message: string;
 }
 
+// ===== USUARIOS CRUD =====
+
+export interface UsuarioCRUD {
+  id: string;
+  nombre: string;
+  rol: RolTag;
+  estado: EstadoUsuario;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateUsuarioDTO {
+  nombre: string;
+  codigo: string;
+  rol: string;
+  estado?: string;
+}
+
+export interface UpdateUsuarioDTO {
+  nombre?: string;
+  rol?: string;
+  estado?: string;
+}
+
+export interface CambiarCodigoDTO {
+  nuevo_codigo: string;
+}
+
+// User Management Events
+export const USER_EVENT_TYPES = {
+  USUARIO_CREADO: 'USUARIO_CREADO',
+  USUARIO_ACTUALIZADO: 'USUARIO_ACTUALIZADO',
+  USUARIO_CODIGO_CAMBIADO: 'USUARIO_CODIGO_CAMBIADO',
+  USUARIO_BAJA_TEMPORAL: 'USUARIO_BAJA_TEMPORAL',
+  USUARIO_REACTIVADO: 'USUARIO_REACTIVADO',
+  USUARIO_DESACTIVADO: 'USUARIO_DESACTIVADO',
+  USUARIO_ELIMINADO: 'USUARIO_ELIMINADO',
+} as const;
+
 // ===== TURNOS Y HORARIOS =====
 
 export interface TurnoHorario {

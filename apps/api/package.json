@@ -11,7 +11,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "seed": "tsx src/scripts/seed-users.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^9.3.1",
@@ -25,7 +26,8 @@
     "fastify": "^4.26.2",
     "fuzzball": "^2.2.3",
     "imapflow": "^1.2.9",
-    "pdfkit": "^0.17.2"
+    "pdfkit": "^0.17.2",
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
     "@types/node": "^20.11.20",

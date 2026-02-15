@@ -7,6 +7,7 @@ import Jefe from './pages/Jefe';
 import Calidad from './pages/Calidad';
 import Dios from './pages/Dios';
 import Techo from './pages/Techo';
+import Usuarios from './pages/Usuarios';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const ROLE_ROUTES: Record<string, string> = {
@@ -57,6 +58,10 @@ function App() {
       
       <Route path="/techo" element={
         <ProtectedRoute allowedRoles={['PANTALLA_TECHO']}><Techo /></ProtectedRoute>
+      } />
+      
+      <Route path="/usuarios" element={
+        <ProtectedRoute allowedRoles={['CALIDAD', 'DIOS']}><Usuarios /></ProtectedRoute>
       } />
       
       <Route path="*" element={

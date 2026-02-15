@@ -59,12 +59,20 @@ cd apps/api
 npx prisma migrate dev
 ```
 
-### 4. Sembrar datos de prueba
+### 4. Sembrar datos de prueba (base)
 ```bash
 npm run prisma:seed -w @dacrisa/api
 ```
 
-### 5. Iniciar en modo desarrollo
+### 5. Seed de usuarios de prueba (idempotente)
+```bash
+cd apps/api
+npm run seed
+```
+
+Este script es idempotente y puede ejecutarse múltiples veces sin duplicar usuarios.
+
+### 6. Iniciar en modo desarrollo
 ```bash
 # Terminal 1 - API
 npm run dev:api
@@ -75,6 +83,8 @@ npm run dev:web
 
 ## Usuarios de Prueba
 
+### Usuarios base (prisma:seed)
+
 | Rol | Código | Nombre |
 |-----|--------|--------|
 | OPERARIO | 1234 | Operario Test |
@@ -83,6 +93,25 @@ npm run dev:web
 | CALIDAD | 4567 | Calidad Test |
 | DIOS | 9999 | Admin Test |
 | PANTALLA_TECHO | 0000 | Techo Monitor |
+
+### Usuarios adicionales (npm run seed)
+
+| Nombre | Código | Rol |
+|--------|--------|-----|
+| Operario 1 | 1111 | OPERARIO |
+| Operario 2 | 2222 | OPERARIO |
+| Operario 3 | 3333 | OPERARIO |
+| Operario 4 | 4444 | OPERARIO |
+| Operario 5 | 5555 | OPERARIO |
+| Operario 6 | 6666 | OPERARIO |
+| Jefe Mañana | 1001 | JEFE |
+| Jefe Tarde | 1002 | JEFE |
+| Jefe Noche | 1003 | JEFE |
+| Colecta 1 | 2001 | COLECTA |
+| Calidad 1 | 3001 | CALIDAD |
+| Administrador | 270885 | DIOS |
+
+Los códigos de usuarios adicionales están configurados en `.env` (excepto DIOS=270885 que es fijo).
 
 ## API Endpoints
 
