@@ -1,0 +1,517 @@
+// DACRISA Comandas - Prisma Schema
+// PostgreSQL 16+ with all 25 tables
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. usuarios
+model Usuario {
+  id           String   @id @default(uuid()) @db.Uuid
+  nombre       String   @db.Text
+  rol_tag      String   @db.Text // OPERARIO, COLECTA, JEFE, CALIDAD, DIOS, PANTALLA_TECHO
+  funcion      String?  @db.Text
+  estado       String   @db.Text // ACTIVO, BAJA_TEMPORAL, INACTIVO
+  baja_motivo  String?  @db.Text
+  baja_inicio  DateTime? @db.Timestamptz
+  baja_fin     DateTime? @db.Timestamptz
+  codigo_lookup Bytes   @unique @db.ByteA
+  codigo_hash  String   @db.Text
+  codigo_enc   Bytes    @db.ByteA
+  codigo_enc_iv Bytes   @db.ByteA
+  codigo_enc_tag Bytes  @db.ByteA
+  created_at   DateTime @default(now()) @db.Timestamptz
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  // Relations
+  familiasPermitidas UsuarioFamiliaPermitida[]
+  turnosComoJefe     Turno[]                   @relation("TurnoJefe")
+  sessions           Session[]
+  turnos_habilitados TurnoUsuarioFamiliaHabilitada[]
+  colecta_asignaciones ColectaAsignacion[]
+  lineas_asignadas   Linea[]
+  owner_afinidades   OwnerAfinidad[]
+  rr_cursors         RRCursor[]
+  operario_progress  OperarioRutaProgress[]
+  print_jobs         PrintJob[]
+  eventos            Evento[]
+  rutas_activadas    RutasMasterVersion[]       @relation("RutasActivatedBy")
+  productos_activados ProductosMasterVersion[]  @relation("ProductosActivatedBy")
+  feature_flags_updated FeatureFlag[]
+
+  @@index([estado], name: "idx_usuarios_estado")
+  @@map("usuarios")
+}
+
+// 2. usuario_familia_permitida
+model UsuarioFamiliaPermitida {
+  usuario_id       String   @db.Uuid
+  codigo_funcional Int      @db.SmallInt
+  created_at       DateTime @default(now()) @db.Timestamptz
+  updated_at       DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@id([usuario_id, codigo_funcional])
+  @@index([codigo_funcional], name: "idx_ufp_codigo")
+  @@map("usuario_familia_permitida")
+}
+
+// 3. turno_horario
+model TurnoHorario {
+  id         String   @id @default(uuid()) @db.Uuid
+  franja     String   @db.Text // MANANA, TARDE, NOCHE
+  start_time DateTime @db.Time
+  end_time   DateTime @db.Time
+  activo     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  @@map("turno_horario")
+}
+
+// 4. turnos
+model Turno {
+  id         String    @id @default(uuid()) @db.Uuid
+  fecha      DateTime  @db.Date
+  franja     String    @db.Text // MANANA, TARDE, NOCHE
+  jefe_id    String?   @db.Uuid
+  estado     String    @db.Text // CREADO, ACTIVO, CERRADO
+  started_at DateTime? @db.Timestamptz
+  ended_at   DateTime? @db.Timestamptz
+  created_at DateTime  @default(now()) @db.Timestamptz
+  updated_at DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  jefe Usuario? @relation("TurnoJefe", fields: [jefe_id], references: [id])
+
+  // Relations
+  turno_usuarios TurnoUsuarioFamiliaHabilitada[]
+  rutas_dia      RutaDia[]
+  colecta_asignaciones ColectaAsignacion[]
+  lotes          Lote[]                     @relation("LoteTurnoOriginal")
+  owner_afinidades OwnerAfinidad[]
+  rr_cursors     RRCursor[]
+  operario_progress OperarioRutaProgress[]
+  colecta_progress ColectaRutaProgress[]
+  print_jobs     PrintJob[]
+
+  @@unique([fecha, franja])
+  @@index([estado], name: "idx_turno_estado")
+  @@map("turnos")
+}
+
+// 5. turno_usuario_familia_habilitada
+model TurnoUsuarioFamiliaHabilitada {
+  turno_id         String   @db.Uuid
+  usuario_id       String   @db.Uuid
+  codigo_funcional Int      @db.SmallInt
+  habilitada       Boolean  @default(false)
+  created_at       DateTime @default(now()) @db.Timestamptz
+  updated_at       DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  turno   Turno   @relation(fields: [turno_id], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@id([turno_id, usuario_id, codigo_funcional])
+  @@index([turno_id, codigo_funcional], name: "idx_tufh_turno_codigo")
+  @@map("turno_usuario_familia_habilitada")
+}
+
+// 6. codigo_funcional_def
+model CodigoFuncionalDef {
+  codigo_funcional Int      @id @db.SmallInt
+  nombre           String   @db.Text
+  descripcion      String   @db.Text
+  created_at       DateTime @default(now()) @db.Timestamptz
+  updated_at       DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  @@map("codigo_funcional_def")
+}
+
+// 7. rutas_master_version
+model RutasMasterVersion {
+  id                 String    @id @default(uuid()) @db.Uuid
+  version_label      String    @db.Text
+  archivo_nombre     String    @db.Text
+  archivo_hash       String    @db.Text
+  activo             Boolean   @default(false)
+  validacion_estado  String    @db.Text // OK, BLOQUEADO
+  validacion_resumen Json      @default("{}")
+  activated_at       DateTime? @db.Timestamptz
+  activated_by       String?   @db.Uuid
+  created_at         DateTime  @default(now()) @db.Timestamptz
+  updated_at         DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  activator Usuario? @relation("RutasActivatedBy", fields: [activated_by], references: [id])
+  rutas     RutasMaster[]
+  lotes     Lote[]
+
+  @@map("rutas_master_version")
+}
+
+// 8. rutas_master
+model RutasMaster {
+  id         String   @id @default(uuid()) @db.Uuid
+  version_id String   @db.Uuid
+  ruta_raw   String   @db.Text
+  ruta_norm  String   @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  version RutasMasterVersion @relation(fields: [version_id], references: [id], onDelete: Cascade)
+
+  @@index([version_id], name: "idx_rutas_master_version")
+  @@index([ruta_norm], name: "idx_rutas_master_norm")
+  @@map("rutas_master")
+}
+
+// 9. productos_master_version
+model ProductosMasterVersion {
+  id                 String    @id @default(uuid()) @db.Uuid
+  version_label      String    @db.Text
+  archivo_nombre     String    @db.Text
+  archivo_hash       String    @db.Text
+  activo             Boolean   @default(false)
+  validacion_estado  String    @db.Text // OK, BLOQUEADO
+  validacion_resumen Json      @default("{}")
+  activated_at       DateTime? @db.Timestamptz
+  activated_by       String?   @db.Uuid
+  created_at         DateTime  @default(now()) @db.Timestamptz
+  updated_at         DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  activator Usuario? @relation("ProductosActivatedBy", fields: [activated_by], references: [id])
+  productos ProductosMaster[]
+  lotes     Lote[]
+
+  @@map("productos_master_version")
+}
+
+// 10. productos_master
+model ProductosMaster {
+  id              String   @id @default(uuid()) @db.Uuid
+  version_id      String   @db.Uuid
+  producto_raw    String   @db.Text
+  producto_norm   String   @db.Text
+  familia         Int      @db.SmallInt
+  codigo_producto String?  @db.Text
+  created_at      DateTime @default(now()) @db.Timestamptz
+  updated_at      DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  version ProductosMasterVersion @relation(fields: [version_id], references: [id], onDelete: Cascade)
+
+  @@index([version_id], name: "idx_productos_master_version")
+  @@index([producto_norm], name: "idx_productos_master_norm")
+  @@index([familia], name: "idx_productos_master_familia")
+  @@map("productos_master")
+}
+
+// 11. ruta_dia
+model RutaDia {
+  id                   String    @id @default(uuid()) @db.Uuid
+  turno_id             String    @db.Uuid
+  ruta_norm            String    @db.Text
+  estado_visual        String    @db.Text // AZUL, VERDE, ROJO
+  estado_logico        String    @db.Text // ACTIVA, RECOLECTADA
+  reactivaciones_count Int       @default(0)
+  last_event_at        DateTime? @db.Timestamptz
+  created_at           DateTime  @default(now()) @db.Timestamptz
+  updated_at           DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  turno Turno  @relation(fields: [turno_id], references: [id], onDelete: Cascade)
+  lotes Lote[]
+
+  @@unique([turno_id, ruta_norm])
+  @@index([turno_id], name: "idx_ruta_dia_turno")
+  @@index([estado_visual], name: "idx_ruta_dia_estado_visual")
+  @@index([ruta_norm], name: "idx_ruta_dia_ruta")
+  @@map("ruta_dia")
+}
+
+// 12. colecta_asignacion
+model ColectaAsignacion {
+  turno_id        String   @db.Uuid
+  ruta_norm       String   @db.Text
+  colecta_user_id String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamptz
+  updated_at      DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  turno  Turno   @relation(fields: [turno_id], references: [id], onDelete: Cascade)
+  colecta Usuario @relation(fields: [colecta_user_id], references: [id])
+
+  @@id([turno_id, ruta_norm])
+  @@index([colecta_user_id], name: "idx_colecta_user")
+  @@map("colecta_asignacion")
+}
+
+// 13. lote
+model Lote {
+  id                  String    @id @default(uuid()) @db.Uuid
+  ruta_dia_id         String?   @db.Uuid
+  imap_uid            BigInt
+  imap_uidvalidity    BigInt
+  received_at         DateTime  @db.Timestamptz
+  business_date       DateTime  @db.Date
+  subject_raw         String    @db.Text
+  body_raw            String    @db.Text
+  parse_status        String    @db.Text // OK, ERROR_RUTA, ERROR_PARSE
+  productos_version_id String   @db.Uuid
+  rutas_version_id    String    @db.Uuid
+  original_turno_id   String?   @db.Uuid
+  carried_over        Boolean   @default(false)
+  created_at          DateTime  @default(now()) @db.Timestamptz
+  updated_at          DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  ruta_dia          RutaDia?               @relation(fields: [ruta_dia_id], references: [id], onDelete: SetNull)
+  productos_version ProductosMasterVersion @relation(fields: [productos_version_id], references: [id])
+  rutas_version     RutasMasterVersion     @relation(fields: [rutas_version_id], references: [id])
+  original_turno    Turno?                 @relation("LoteTurnoOriginal", fields: [original_turno_id], references: [id])
+  pedidos           PedidoCliente[]
+  
+  // Progress relations
+  operario_progress_cutoff OperarioRutaProgress[] @relation("OperarioProgressCutoff")
+  operario_progress_last   OperarioRutaProgress[] @relation("OperarioProgressLast")
+  colecta_progress         ColectaRutaProgress[]
+  print_jobs_cutoff        PrintJob[]             @relation("PrintJobCutoff")
+  print_jobs_from          PrintJob[]             @relation("PrintJobFrom")
+  print_jobs_to            PrintJob[]             @relation("PrintJobTo")
+
+  @@unique([imap_uidvalidity, imap_uid])
+  @@index([ruta_dia_id, received_at], name: "idx_lote_ruta_dia")
+  @@index([business_date], name: "idx_lote_business_date")
+  @@map("lote")
+}
+
+// 14. pedido_cliente
+model PedidoCliente {
+  id                  String   @id @default(uuid()) @db.Uuid
+  lote_id             String   @db.Uuid
+  codigo_cliente      String   @db.Text
+  nombre_cliente_raw  String?  @db.Text
+  localidad_raw       String?  @db.Text
+  cliente_affinity_key String  @db.Text
+  observaciones       String?  @db.Text
+  created_at          DateTime @default(now()) @db.Timestamptz
+  updated_at          DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  lote   Lote    @relation(fields: [lote_id], references: [id], onDelete: Cascade)
+  lineas Linea[]
+
+  @@index([lote_id], name: "idx_pedido_cliente_lote")
+  @@index([cliente_affinity_key], name: "idx_pedido_cliente_affinity")
+  @@map("pedido_cliente")
+}
+
+// 15. linea
+model Linea {
+  id                String    @id @default(uuid()) @db.Uuid
+  pedido_cliente_id String    @db.Uuid
+  seq_in_cliente    Int
+  cantidad          Decimal   @db.Decimal(14, 6)
+  unidad_raw        String    @db.Text
+  producto_raw      String    @db.Text
+  producto_norm     String    @db.Text
+  precio_raw        String?   @db.Text
+  precio_num        Decimal?  @db.Decimal(18, 10)
+  moneda            String?   @db.Char(3)
+  match_method      String    @db.Text // EXACT, FUZZY
+  match_score       Decimal?  @db.Decimal(6, 4)
+  familia           Int       @db.SmallInt
+  codigo_funcional  Int       @db.SmallInt
+  operario_id       String?   @db.Uuid
+  assigned_at       DateTime? @db.Timestamptz
+  printed_at        DateTime? @db.Timestamptz
+  print_count       Int       @default(0)
+  linea_observacion String?   @db.Text
+  created_at        DateTime  @default(now()) @db.Timestamptz
+  updated_at        DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  pedido_cliente PedidoCliente  @relation(fields: [pedido_cliente_id], references: [id], onDelete: Cascade)
+  operario       Usuario?       @relation(fields: [operario_id], references: [id])
+  print_job_items PrintJobItem[]
+
+  @@index([pedido_cliente_id, seq_in_cliente], name: "idx_linea_pedido")
+  @@index([match_method], name: "idx_linea_match_method")
+  @@map("linea")
+}
+
+// 16. owner_afinidad
+model OwnerAfinidad {
+  turno_id             String   @db.Uuid
+  cliente_affinity_key String   @db.Text
+  codigo_funcional     Int      @db.SmallInt
+  operario_id          String   @db.Uuid
+  created_at           DateTime @default(now()) @db.Timestamptz
+  updated_at           DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  turno    Turno   @relation(fields: [turno_id], references: [id], onDelete: Cascade)
+  operario Usuario @relation(fields: [operario_id], references: [id])
+
+  @@id([turno_id, cliente_affinity_key, codigo_funcional])
+  @@index([operario_id], name: "idx_owner_operario")
+  @@map("owner_afinidad")
+}
+
+// 17. rr_cursor
+model RRCursor {
+  turno_id          String   @db.Uuid
+  codigo_funcional  Int      @db.SmallInt
+  last_operario_id  String?  @db.Uuid
+  created_at        DateTime @default(now()) @db.Timestamptz
+  updated_at        DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  turno         Turno    @relation(fields: [turno_id], references: [id], onDelete: Cascade)
+  last_operario Usuario? @relation(fields: [last_operario_id], references: [id])
+
+  @@id([turno_id, codigo_funcional])
+  @@map("rr_cursor")
+}
+
+// 18. operario_ruta_progress
+model OperarioRutaProgress {
+  turno_id             String    @db.Uuid
+  operario_id          String    @db.Uuid
+  ruta_norm            String    @db.Text
+  login_at             DateTime  @db.Timestamptz
+  cutoff_lote_id       String?   @db.Uuid
+  last_printed_lote_id String?   @db.Uuid
+  last_printed_at      DateTime? @db.Timestamptz
+  created_at           DateTime  @default(now()) @db.Timestamptz
+  updated_at           DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  turno             Turno   @relation(fields: [turno_id], references: [id], onDelete: Cascade)
+  operario          Usuario @relation(fields: [operario_id], references: [id], onDelete: Cascade)
+  cutoff_lote       Lote?   @relation("OperarioProgressCutoff", fields: [cutoff_lote_id], references: [id])
+  last_printed_lote Lote?   @relation("OperarioProgressLast", fields: [last_printed_lote_id], references: [id])
+
+  @@id([turno_id, operario_id, ruta_norm])
+  @@index([turno_id, ruta_norm], name: "idx_orp_ruta")
+  @@map("operario_ruta_progress")
+}
+
+// 19. colecta_ruta_progress
+model ColectaRutaProgress {
+  turno_id          String    @db.Uuid
+  ruta_norm         String    @db.Text
+  last_closed_lote_id String? @db.Uuid
+  last_closed_at    DateTime? @db.Timestamptz
+  created_at        DateTime  @default(now()) @db.Timestamptz
+  updated_at        DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  turno           Turno @relation(fields: [turno_id], references: [id], onDelete: Cascade)
+  last_closed_lote Lote? @relation(fields: [last_closed_lote_id], references: [id])
+
+  @@id([turno_id, ruta_norm])
+  @@map("colecta_ruta_progress")
+}
+
+// 20. print_jobs
+model PrintJob {
+  id              String    @id @default(uuid()) @db.Uuid
+  turno_id        String    @db.Uuid
+  ruta_norm       String    @db.Text
+  actor_user_id   String?   @db.Uuid
+  tipo            String    @db.Text // OPERARIO_INICIAL, OPERARIO_NUEVOS, COLECTA_NUEVOS, REIMPRESION
+  cutoff_lote_id  String?   @db.Uuid
+  from_lote_id    String?   @db.Uuid
+  to_lote_id      String?   @db.Uuid
+  status          String    @db.Text // CREADO, PDF_GENERADO, ENVIADO, FALLIDO
+  pdf_path        String?   @db.Text
+  error_text      String?   @db.Text
+  meta            Json      @default("{}")
+  created_at      DateTime  @default(now()) @db.Timestamptz
+  updated_at      DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  turno       Turno         @relation(fields: [turno_id], references: [id], onDelete: Cascade)
+  actor       Usuario?      @relation(fields: [actor_user_id], references: [id])
+  cutoff_lote Lote?         @relation("PrintJobCutoff", fields: [cutoff_lote_id], references: [id])
+  from_lote   Lote?         @relation("PrintJobFrom", fields: [from_lote_id], references: [id])
+  to_lote     Lote?         @relation("PrintJobTo", fields: [to_lote_id], references: [id])
+  items       PrintJobItem[]
+
+  @@index([turno_id, ruta_norm], name: "idx_print_jobs_turno_ruta")
+  @@index([actor_user_id], name: "idx_print_jobs_actor")
+  @@index([status], name: "idx_print_jobs_status")
+  @@map("print_jobs")
+}
+
+// 21. print_job_items
+model PrintJobItem {
+  print_job_id String   @db.Uuid
+  linea_id     String   @db.Uuid
+  created_at   DateTime @default(now()) @db.Timestamptz
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  print_job PrintJob @relation(fields: [print_job_id], references: [id], onDelete: Cascade)
+  linea     Linea    @relation(fields: [linea_id], references: [id], onDelete: Cascade)
+
+  @@id([print_job_id, linea_id])
+  @@map("print_job_items")
+}
+
+// 22. eventos
+model Evento {
+  id            String   @id @default(uuid()) @db.Uuid
+  ts            DateTime @default(now()) @db.Timestamptz
+  actor_user_id String?  @db.Uuid
+  tipo          String   @db.Text
+  entidad_tipo  String   @db.Text
+  entidad_id    String   @db.Text
+  payload       Json     @default("{}")
+
+  actor Usuario? @relation(fields: [actor_user_id], references: [id])
+
+  @@index([ts(sort: Desc)], name: "idx_eventos_ts")
+  @@index([tipo], name: "idx_eventos_tipo")
+  @@index([entidad_tipo, entidad_id], name: "idx_eventos_entidad")
+  @@map("eventos")
+}
+
+// 23. sessions
+model Session {
+  id                 String    @id @default(uuid()) @db.Uuid
+  user_id            String    @db.Uuid
+  session_token_hash String    @db.Text
+  device_id          String?   @db.Text
+  created_at         DateTime  @default(now()) @db.Timestamptz
+  expires_at         DateTime  @db.Timestamptz
+  revoked_at         DateTime? @db.Timestamptz
+
+  user Usuario @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id], name: "idx_sessions_user")
+  @@index([session_token_hash], name: "idx_sessions_token")
+  @@map("sessions")
+}
+
+// 24. feature_flags
+model FeatureFlag {
+  id         String    @id @default(uuid()) @db.Uuid
+  key        String    @unique @db.Text
+  enabled    Boolean   @default(true)
+  updated_by String?   @db.Uuid
+  created_at DateTime  @default(now()) @db.Timestamptz
+  updated_at DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  updater Usuario? @relation(fields: [updated_by], references: [id])
+
+  @@map("feature_flags")
+}
+
+// 25. imap_state
+model ImapState {
+  id            String    @id @default(uuid()) @db.Uuid
+  mailbox       String    @default("INBOX") @db.Text
+  uidvalidity   BigInt?
+  last_uid      BigInt    @default(0)
+  last_poll_at  DateTime? @db.Timestamptz
+  created_at    DateTime  @default(now()) @db.Timestamptz
+  updated_at    DateTime  @default(now()) @updatedAt @db.Timestamptz
+
+  @@unique([mailbox])
+  @@map("imap_state")
+}

@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:16
+    container_name: dacrisa_db
+    environment:
+      POSTGRES_DB: dacrisa_comandas
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: dacrisa_api
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/dacrisa_comandas
+      NODE_ENV: development
+      CODE_ENC_KEY: ${CODE_ENC_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      SESSION_SECRET: ${SESSION_SECRET:-supersecretkey123456789012345678}
+      CODE_LOOKUP_SECRET: ${CODE_LOOKUP_SECRET:-lookupsecret123456789012345678901}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: dacrisa_web
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://api:3001
+    depends_on:
+      - api
+
+volumes:
+  db_data:

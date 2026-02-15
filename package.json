@@ -1,0 +1,24 @@
+{
+  "name": "dacrisa-comandas",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev:api & npm run dev:web",
+    "dev:api": "npm run dev -w @dacrisa/api",
+    "dev:web": "npm run dev -w @dacrisa/web",
+    "build": "npm run build -w @dacrisa/shared && npm run build -w @dacrisa/api && npm run build -w @dacrisa/web",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:build": "docker compose build",
+    "prisma:generate": "npm run prisma:generate -w @dacrisa/api",
+    "prisma:migrate": "npm run prisma:migrate -w @dacrisa/api",
+    "prisma:seed": "npm run prisma:seed -w @dacrisa/api"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
