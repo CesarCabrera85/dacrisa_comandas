@@ -1,8 +1,6 @@
-import { useAuth } from '../context/AuthContext';
 import LogoutButton from '../components/LogoutButton';
 
 function Techo() {
-  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-700 p-6">
