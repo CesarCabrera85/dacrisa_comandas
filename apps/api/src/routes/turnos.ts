@@ -10,6 +10,7 @@ import {
   calculateTurnoEndTime,
   TurnoRulesError,
 } from '../lib/turno-rules.js';
+import { imapWorker } from '../services/imap-worker.js';
 
 type FranjaTurno = 'MANANA' | 'TARDE' | 'NOCHE';
 
@@ -158,6 +159,17 @@ export async function turnosRoutes(fastify: FastifyInstance) {
 
       fastify.log.info(`Turno ${turno.id} iniciado por usuario ${userId}`);
 
+      // Ejecutar backlog IMAP (no bloquear el inicio de turno por errores)
+      let backlogCount = 0;
+      try {
+        backlogCount = await imapWorker.executeBacklog(turno.id);
+        fastify.log.info(`Backlog IMAP ejecutado: ${backlogCount} mensajes procesados`);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        fastify.log.error(`Error ejecutando backlog IMAP: ${errorMessage}`);
+        // No fallar el inicio de turno por error de IMAP
+      }
+
       return reply.status(201).send({
         id: turno.id,
         fecha: turno.fecha.toISOString().split('T')[0],
@@ -166,6 +178,7 @@ export async function turnosRoutes(fastify: FastifyInstance) {
         estado: turno.estado,
         started_at: turno.started_at?.toISOString() || null,
         ended_at: turno.ended_at?.toISOString() || null,
+        backlog_count: backlogCount,
       });
     } catch (error) {
       if (error instanceof TurnoRulesError) {

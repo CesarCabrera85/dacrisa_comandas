@@ -9,7 +9,9 @@ import { turnosRoutes } from './routes/turnos.js';
 import { usersRoutes } from './routes/users.js';
 import { masterdataProductosRoutes } from './routes/masterdata-productos.js';
 import { masterdataRutasRoutes } from './routes/masterdata-rutas.js';
-import { startTurnoScheduler } from './services/scheduler.js';
+import { imapRoutes } from './routes/imap.js';
+import { startTurnoScheduler, stopTurnoScheduler } from './services/scheduler.js';
+import { imapWorker } from './services/imap-worker.js';
 
 const fastify = Fastify({
   logger: true,
@@ -39,10 +41,32 @@ await fastify.register(turnosRoutes, { prefix: '/api/turnos' });
 await fastify.register(usersRoutes, { prefix: '/api/users' });
 await fastify.register(masterdataProductosRoutes, { prefix: '/api/masterdata/productos' });
 await fastify.register(masterdataRutasRoutes, { prefix: '/api/masterdata/rutas' });
+await fastify.register(imapRoutes, { prefix: '/api/imap' });
 
 // Start server
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const HOST = process.env.HOST || '0.0.0.0';
+
+// Graceful shutdown handler
+async function gracefulShutdown(signal: string) {
+  console.log(`\n[Server] Recibida señal ${signal}, cerrando...`);
+  
+  // Stop IMAP worker
+  await imapWorker.stop();
+  
+  // Stop turno scheduler
+  stopTurnoScheduler();
+  
+  // Close Fastify server
+  await fastify.close();
+  
+  console.log('[Server] Servidor cerrado correctamente');
+  process.exit(0);
+}
+
+// Register signal handlers
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 try {
   await fastify.listen({ port: PORT, host: HOST });
@@ -50,6 +74,10 @@ try {
   
   // Iniciar scheduler de cierre automático de turnos
   startTurnoScheduler();
+  
+  // Iniciar IMAP worker
+  await imapWorker.start();
+  
 } catch (err) {
   fastify.log.error(err);
   process.exit(1);

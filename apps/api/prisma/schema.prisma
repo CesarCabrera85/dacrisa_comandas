@@ -255,20 +255,21 @@ model Lote {
   imap_uid            BigInt
   imap_uidvalidity    BigInt
   received_at         DateTime  @db.Timestamptz
-  business_date       DateTime  @db.Date
+  business_date       DateTime? @db.Date
   subject_raw         String    @db.Text
   body_raw            String    @db.Text
-  parse_status        String    @db.Text // OK, ERROR_RUTA, ERROR_PARSE
-  productos_version_id String   @db.Uuid
-  rutas_version_id    String    @db.Uuid
+  parse_status        String    @db.Text // OK, ERROR_RUTA, ERROR_PARSE, PENDING
+  parse_error         String?   @db.Text
+  productos_version_id String?  @db.Uuid
+  rutas_version_id    String?   @db.Uuid
   original_turno_id   String?   @db.Uuid
   carried_over        Boolean   @default(false)
   created_at          DateTime  @default(now()) @db.Timestamptz
   updated_at          DateTime  @default(now()) @updatedAt @db.Timestamptz
 
   ruta_dia          RutaDia?               @relation(fields: [ruta_dia_id], references: [id], onDelete: SetNull)
-  productos_version ProductosMasterVersion @relation(fields: [productos_version_id], references: [id])
-  rutas_version     RutasMasterVersion     @relation(fields: [rutas_version_id], references: [id])
+  productos_version ProductosMasterVersion? @relation(fields: [productos_version_id], references: [id])
+  rutas_version     RutasMasterVersion?     @relation(fields: [rutas_version_id], references: [id])
   original_turno    Turno?                 @relation("LoteTurnoOriginal", fields: [original_turno_id], references: [id])
   pedidos           PedidoCliente[]
   

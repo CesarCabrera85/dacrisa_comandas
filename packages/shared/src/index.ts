@@ -12,7 +12,7 @@ export type EstadoVisualRuta = 'AZUL' | 'VERDE' | 'ROJO';
 
 export type EstadoLogicoRuta = 'ACTIVA' | 'RECOLECTADA';
 
-export type ParseStatus = 'OK' | 'ERROR_RUTA' | 'ERROR_PARSE';
+export type ParseStatus = 'OK' | 'ERROR_RUTA' | 'ERROR_PARSE' | 'PENDING';
 
 export type MatchMethod = 'EXACT' | 'FUZZY';
 
@@ -226,3 +226,37 @@ export const ROLE_ROUTES: Record<RolTag, string> = {
   DIOS: '/dios',
   PANTALLA_TECHO: '/techo',
 };
+
+// ===== IMAP TYPES =====
+
+export interface Lote {
+  id: string;
+  turno_id: string | null;
+  imap_uid: number;
+  imap_uidvalidity: number;
+  subject_raw: string;
+  body_raw: string;
+  received_at: string;
+  parse_status: ParseStatus;
+  parse_error: string | null;
+  business_date: string | null;
+  created_at: string;
+}
+
+export interface ImapStatus {
+  isRunning: boolean;
+  isConnected: boolean;
+  lastError: string | null;
+  lastPollTime: string | null;
+  cursor: {
+    lastUid: number;
+    uidValidity: number | null;
+  };
+}
+
+// IMAP Event types
+export const IMAP_EVENT_TYPES = {
+  NUEVO_CORREO_RECIBIDO: 'NUEVO_CORREO_RECIBIDO',
+  ERROR_EN_LECTURA_DE_CORREO: 'ERROR_EN_LECTURA_DE_CORREO',
+  DUPLICADO_IMAP_IGNORADO: 'DUPLICADO_IMAP_IGNORADO',
+} as const;
