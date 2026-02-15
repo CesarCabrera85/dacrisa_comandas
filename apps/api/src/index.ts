@@ -1,11 +1,14 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
+import multipart from '@fastify/multipart';
 import { healthRoutes } from './routes/health.js';
 import { authRoutes } from './routes/auth.js';
 import { horariosRoutes } from './routes/horarios.js';
 import { turnosRoutes } from './routes/turnos.js';
 import { usersRoutes } from './routes/users.js';
+import { masterdataProductosRoutes } from './routes/masterdata-productos.js';
+import { masterdataRutasRoutes } from './routes/masterdata-rutas.js';
 import { startTurnoScheduler } from './services/scheduler.js';
 
 const fastify = Fastify({
@@ -22,12 +25,20 @@ await fastify.register(cookie, {
   secret: process.env.SESSION_SECRET || 'supersecretkey123456789012345678',
 });
 
+await fastify.register(multipart, {
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max file size
+  },
+});
+
 // Register routes
 await fastify.register(healthRoutes);
 await fastify.register(authRoutes);
 await fastify.register(horariosRoutes, { prefix: '/api/horarios' });
 await fastify.register(turnosRoutes, { prefix: '/api/turnos' });
 await fastify.register(usersRoutes, { prefix: '/api/users' });
+await fastify.register(masterdataProductosRoutes, { prefix: '/api/masterdata/productos' });
+await fastify.register(masterdataRutasRoutes, { prefix: '/api/masterdata/rutas' });
 
 // Start server
 const PORT = parseInt(process.env.PORT || '3001', 10);

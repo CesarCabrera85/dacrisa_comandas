@@ -75,14 +75,14 @@ async function main() {
     console.log(`  ✓ Created user: ${user.nombre} (${user.rol_tag}) - code: ${user.codigo}`);
   }
   
-  // Seed codigo_funcional_def
+  // Seed codigo_funcional_def (Product Families)
   const funcionalDefs = [
-    { codigo_funcional: 1, nombre: 'Familia 1', descripcion: 'Descripción familia 1' },
-    { codigo_funcional: 2, nombre: 'Familia 2', descripcion: 'Descripción familia 2' },
-    { codigo_funcional: 3, nombre: 'Familia 3', descripcion: 'Descripción familia 3' },
-    { codigo_funcional: 4, nombre: 'Familia 4', descripcion: 'Descripción familia 4' },
-    { codigo_funcional: 5, nombre: 'Familia 5', descripcion: 'Descripción familia 5' },
-    { codigo_funcional: 6, nombre: 'Familia 6', descripcion: 'Descripción familia 6' },
+    { codigo_funcional: 1, nombre: 'FRESCO', descripcion: 'Productos frescos y refrigerados' },
+    { codigo_funcional: 2, nombre: 'CONGELADO', descripcion: 'Productos congelados' },
+    { codigo_funcional: 3, nombre: 'SECO', descripcion: 'Productos secos y de despensa' },
+    { codigo_funcional: 4, nombre: 'BEBIDAS', descripcion: 'Bebidas y líquidos' },
+    { codigo_funcional: 5, nombre: 'LIMPIEZA', descripcion: 'Productos de limpieza e higiene' },
+    { codigo_funcional: 6, nombre: 'OTROS', descripcion: 'Otros productos' },
   ];
   
   for (const def of funcionalDefs) {

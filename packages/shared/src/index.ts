@@ -133,7 +133,89 @@ export const ErrorCodes = {
   HORARIO_NO_ENCONTRADO: 'HORARIO_NO_ENCONTRADO',
   HORARIO_EN_USO: 'HORARIO_EN_USO',
   HORARIO_INVALIDO: 'HORARIO_INVALIDO',
+  // Masterdata
+  VALIDACION_BLOQUEADA: 'VALIDACION_BLOQUEADA',
+  ARCHIVO_VACIO: 'ARCHIVO_VACIO',
+  ARCHIVO_ILEGIBLE: 'ARCHIVO_ILEGIBLE',
+  COLUMNAS_FALTANTES: 'COLUMNAS_FALTANTES',
+  CONFLICTO_FAMILIA: 'CONFLICTO_FAMILIA',
+  FAMILIA_NO_EXISTE: 'FAMILIA_NO_EXISTE',
+  NO_ACTIVE_VERSION: 'NO_ACTIVE_VERSION',
 } as const;
+
+// ===== MASTERDATA TYPES =====
+
+export type MasterdataValidationStatus = 'OK' | 'WARNING' | 'BLOQUEADO';
+
+export interface MasterdataValidationError {
+  fila: number;
+  campo: string;
+  tipo: 'ERROR' | 'WARNING';
+  mensaje: string;
+  codigo: string;
+}
+
+export interface ProductosMasterVersion {
+  id: string;
+  version_label: string;
+  archivo_nombre: string;
+  activo: boolean;
+  validacion_estado: string;
+  validacion_resumen?: {
+    status: MasterdataValidationStatus;
+    errores: MasterdataValidationError[];
+    productos_count: number;
+    warnings_count: number;
+    errors_count: number;
+  };
+  productos_count?: number;
+  activated_at: string | null;
+  created_at: string;
+}
+
+export interface ProductoMaster {
+  id: string;
+  version_id: string;
+  producto_raw: string;
+  producto_norm: string;
+  familia: number;
+  codigo_producto: string | null;
+}
+
+export interface RutasMasterVersion {
+  id: string;
+  version_label: string;
+  archivo_nombre: string;
+  activo: boolean;
+  validacion_estado: string;
+  validacion_resumen?: {
+    status: MasterdataValidationStatus;
+    errores: MasterdataValidationError[];
+    rutas_count: number;
+    warnings_count: number;
+    errors_count: number;
+  };
+  rutas_count?: number;
+  activated_at: string | null;
+  created_at: string;
+}
+
+export interface RutaMaster {
+  id: string;
+  version_id: string;
+  ruta_raw: string;
+  ruta_norm: string;
+}
+
+// Family mapping (1-6)
+export const FAMILIA_NAMES: Record<number, string> = {
+  1: 'Familia 1',
+  2: 'Familia 2',
+  3: 'Familia 3',
+  4: 'Familia 4',
+  5: 'Familia 5',
+  6: 'Familia 6',
+};
 
 // Role routing
 export const ROLE_ROUTES: Record<RolTag, string> = {
