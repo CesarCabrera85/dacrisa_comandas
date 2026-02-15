@@ -6,6 +6,7 @@
 import { ImapFlow } from 'imapflow';
 import { prisma } from '../lib/prisma.js';
 import { getCursor, saveCursor, resetCursor, updateLastPollTime } from '../lib/imap-cursor.js';
+import { processLote } from '../lib/batch-processor.js';
 
 // IMAP Configuration from environment
 const IMAP_CONFIG = {
@@ -281,7 +282,7 @@ export class ImapWorker {
             bodyText = this.extractBodyFromSource(msg.source.toString());
           }
 
-          // Create lote
+          // Create lote with PENDING status
           const lote = await prisma.lote.create({
             data: {
               imap_uid: BigInt(msgUid),
@@ -289,7 +290,7 @@ export class ImapWorker {
               subject_raw: subject,
               body_raw: bodyText,
               received_at: receivedAt,
-              parse_status: 'OK', // Will be parsed in TASK 05
+              parse_status: 'PENDING', // Will be parsed by processLote
               original_turno_id: turnoId,
             },
           });
@@ -299,6 +300,16 @@ export class ImapWorker {
             imap_uid: msgUid,
             subject: subject.substring(0, 100),
           });
+
+          // Process the lote (parsing, matching, assignment)
+          try {
+            await processLote(lote.id);
+            console.log(`[IMAP Worker] Lote procesado: ${lote.id} (UID: ${msgUid})`);
+          } catch (processError) {
+            const processErrorMsg = processError instanceof Error ? processError.message : String(processError);
+            console.error(`[IMAP Worker] Error procesando lote ${lote.id}: ${processErrorMsg}`);
+            // Don't fail the ingestion, the lote is created and error is logged
+          }
 
           processedCount++;
           lastProcessedUid = Math.max(lastProcessedUid, msgUid);

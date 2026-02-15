@@ -11,6 +11,7 @@ import {
   TurnoRulesError,
 } from '../lib/turno-rules.js';
 import { imapWorker } from '../services/imap-worker.js';
+import { executeCarryover, getTurnoAnterior } from '../lib/carryover.js';
 
 type FranjaTurno = 'MANANA' | 'TARDE' | 'NOCHE';
 
@@ -170,6 +171,20 @@ export async function turnosRoutes(fastify: FastifyInstance) {
         // No fallar el inicio de turno por error de IMAP
       }
 
+      // Ejecutar carryover de turno anterior (si existe)
+      let carryoverResult = { lotes_carryover: 0, lineas_carryover: 0 };
+      const turnoAnterior = await getTurnoAnterior();
+      if (turnoAnterior) {
+        try {
+          carryoverResult = await executeCarryover(turno.id, turnoAnterior.id);
+          fastify.log.info(`Carryover ejecutado: ${carryoverResult.lotes_carryover} lotes, ${carryoverResult.lineas_carryover} lineas`);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          fastify.log.error(`Error ejecutando carryover: ${errorMessage}`);
+          // No fallar el inicio de turno por error de carryover
+        }
+      }
+
       return reply.status(201).send({
         id: turno.id,
         fecha: turno.fecha.toISOString().split('T')[0],
@@ -179,6 +194,7 @@ export async function turnosRoutes(fastify: FastifyInstance) {
         started_at: turno.started_at?.toISOString() || null,
         ended_at: turno.ended_at?.toISOString() || null,
         backlog_count: backlogCount,
+        carryover: carryoverResult,
       });
     } catch (error) {
       if (error instanceof TurnoRulesError) {

@@ -10,6 +10,7 @@ import { usersRoutes } from './routes/users.js';
 import { masterdataProductosRoutes } from './routes/masterdata-productos.js';
 import { masterdataRutasRoutes } from './routes/masterdata-rutas.js';
 import { imapRoutes } from './routes/imap.js';
+import { rutasRoutes } from './routes/rutas.js';
 import { startTurnoScheduler, stopTurnoScheduler } from './services/scheduler.js';
 import { imapWorker } from './services/imap-worker.js';
 
@@ -42,6 +43,7 @@ await fastify.register(usersRoutes, { prefix: '/api/users' });
 await fastify.register(masterdataProductosRoutes, { prefix: '/api/masterdata/productos' });
 await fastify.register(masterdataRutasRoutes, { prefix: '/api/masterdata/rutas' });
 await fastify.register(imapRoutes, { prefix: '/api/imap' });
+await fastify.register(rutasRoutes, { prefix: '/api/rutas' });
 
 // Start server
 const PORT = parseInt(process.env.PORT || '3001', 10);

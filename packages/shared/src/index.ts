@@ -260,3 +260,104 @@ export const IMAP_EVENT_TYPES = {
   ERROR_EN_LECTURA_DE_CORREO: 'ERROR_EN_LECTURA_DE_CORREO',
   DUPLICADO_IMAP_IGNORADO: 'DUPLICADO_IMAP_IGNORADO',
 } as const;
+
+// ===== PARSER AND BATCH PROCESSING TYPES =====
+
+export type MatchType = 'EXACT' | 'FUZZY' | 'NO_MATCH';
+export type AssignmentReason = 'AFINIDAD' | 'ROUND_ROBIN' | 'SIN_POOL';
+
+export interface PedidoCliente {
+  id: string;
+  lote_id: string;
+  codigo_cliente: string;
+  nombre_cliente_raw: string | null;
+  cliente_affinity_key: string;
+  observaciones: string | null;
+}
+
+export interface Linea {
+  id: string;
+  pedido_cliente_id: string;
+  seq_in_cliente: number;
+  cantidad: number;
+  unidad_raw: string;
+  producto_raw: string;
+  producto_norm: string;
+  precio_num: number | null;
+  match_method: MatchMethod;
+  match_score: number | null;
+  familia: number;
+  codigo_funcional: number;
+  operario_id: string | null;
+  printed_at: string | null;
+  print_count: number;
+}
+
+export interface RutaDia {
+  id: string;
+  turno_id: string;
+  ruta_norm: string;
+  estado_visual: EstadoVisualRuta;
+  estado_logico: EstadoLogicoRuta;
+  reactivaciones_count: number;
+  last_event_at: string | null;
+}
+
+export interface RutaResumen {
+  ruta_id: string;
+  ruta_nombre: string;
+  estado_visual: EstadoVisualRuta;
+  estado_logico: EstadoLogicoRuta;
+  pendiente_imprimible: number;
+  total_clientes: number;
+  total_lineas: number;
+  lotes_count: number;
+}
+
+export interface ClienteResumen {
+  pedido_cliente_id: string;
+  cliente_nombre: string;
+  operario_id: string | null;
+  operario_nombre: string | null;
+  observaciones: string | null;
+  total_lineas: number;
+  lineas_impresas: number;
+  lineas_pendientes: number;
+}
+
+export interface LineaResumen {
+  linea_id: string;
+  producto_nombre: string;
+  producto_norm: string;
+  cantidad: number;
+  unidad: string;
+  precio: number | null;
+  match_method: MatchMethod;
+  match_score: number | null;
+  impreso: boolean;
+  printed_at: string | null;
+  print_count: number;
+  operario_id: string | null;
+  familia: number;
+  observacion: string | null;
+}
+
+// Parser Event types
+export const PARSER_EVENT_TYPES = {
+  ERROR_PARSE_RUTA: 'ERROR_PARSE_RUTA',
+  ERROR_PARSE_BODY: 'ERROR_PARSE_BODY',
+  PRODUCTO_NO_ENCONTRADO: 'PRODUCTO_NO_ENCONTRADO',
+  PRODUCTO_ASIGNADO_POR_PROBABILIDAD: 'PRODUCTO_ASIGNADO_POR_PROBABILIDAD',
+  SIN_POOL_CODIGO_FUNCIONAL: 'SIN_POOL_CODIGO_FUNCIONAL',
+  LOTE_PROCESADO: 'LOTE_PROCESADO',
+  ERROR_PROCESAMIENTO_LOTE: 'ERROR_PROCESAMIENTO_LOTE',
+  RUTA_ALERTA_ROJA: 'RUTA_ALERTA_ROJA',
+  RUTA_COMPLETA_VERDE: 'RUTA_COMPLETA_VERDE',
+  RUTA_RECOLECTADA: 'RUTA_RECOLECTADA',
+  LOTE_CARRYOVER: 'LOTE_CARRYOVER',
+} as const;
+
+export interface CarryoverResult {
+  lotes_carryover: number;
+  lineas_carryover: number;
+}

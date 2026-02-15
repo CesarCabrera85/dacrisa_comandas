@@ -21,6 +21,7 @@
     "argon2": "^0.31.2",
     "exceljs": "^4.4.0",
     "fastify": "^4.26.2",
+    "fuzzball": "^2.2.3",
     "imapflow": "^1.2.9"
   },
   "devDependencies": {
