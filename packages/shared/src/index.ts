@@ -361,3 +361,70 @@ export interface CarryoverResult {
   lotes_carryover: number;
   lineas_carryover: number;
 }
+
+// ===== PRINT TYPES =====
+
+export interface PrintJob {
+  id: string;
+  tipo: PrintJobTipo;
+  actor_user_id: string | null;
+  ruta_norm: string;
+  turno_id: string;
+  status: PrintJobStatus;
+  pdf_path: string;
+  lineas_count: number;
+  created_at: string;
+}
+
+export interface PrintJobItem {
+  print_job_id: string;
+  linea_id: string;
+}
+
+export interface OperarioRutaProgress {
+  turno_id: string;
+  operario_id: string;
+  ruta_norm: string;
+  login_at: string;
+  cutoff_lote_id: string | null;
+  last_printed_lote_id: string | null;
+  last_printed_at: string | null;
+}
+
+export interface ColectaRutaProgress {
+  turno_id: string;
+  ruta_norm: string;
+  last_closed_lote_id: string | null;
+  last_closed_at: string | null;
+}
+
+export interface PrintOperarioStatus {
+  has_entered: boolean;
+  can_print_inicial: boolean;
+  can_print_nuevos: boolean;
+  cutoff_lote_id: string | null;
+  last_printed_lote_id: string | null;
+  last_printed_at: string | null;
+}
+
+export interface PrintColectaStatus {
+  estado_logico: EstadoLogicoRuta;
+  estado_visual: EstadoVisualRuta;
+  last_closed_lote_id: string | null;
+  last_closed_at: string | null;
+}
+
+export interface PrintResult {
+  success: boolean;
+  print_job_id: string;
+  pdf_url: string;
+  pdf_full_url: string;
+  lineas_count: number;
+}
+
+// Print Event types
+export const PRINT_EVENT_TYPES = {
+  OPERARIO_ENTER_RUTA: 'OPERARIO_ENTER_RUTA',
+  IMPRESION_REALIZADA: 'IMPRESION_REALIZADA',
+  RUTA_RECOLECTADA: 'RUTA_RECOLECTADA',
+} as const;

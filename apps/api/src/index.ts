@@ -2,6 +2,10 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import multipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { healthRoutes } from './routes/health.js';
 import { authRoutes } from './routes/auth.js';
 import { horariosRoutes } from './routes/horarios.js';
@@ -11,8 +15,13 @@ import { masterdataProductosRoutes } from './routes/masterdata-productos.js';
 import { masterdataRutasRoutes } from './routes/masterdata-rutas.js';
 import { imapRoutes } from './routes/imap.js';
 import { rutasRoutes } from './routes/rutas.js';
+import { printRoutes } from './routes/print.js';
 import { startTurnoScheduler, stopTurnoScheduler } from './services/scheduler.js';
 import { imapWorker } from './services/imap-worker.js';
+
+// Get __dirname equivalent for ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const fastify = Fastify({
   logger: true,
@@ -34,6 +43,19 @@ await fastify.register(multipart, {
   },
 });
 
+// Create PDF directory if it doesn't exist
+const uploadsDir = path.join(__dirname, '../../uploads');
+const pdfDir = path.join(uploadsDir, 'pdf');
+if (!fs.existsSync(pdfDir)) {
+  fs.mkdirSync(pdfDir, { recursive: true });
+}
+
+// Register static files plugin for serving PDFs
+await fastify.register(fastifyStatic, {
+  root: uploadsDir,
+  prefix: '/uploads/',
+});
+
 // Register routes
 await fastify.register(healthRoutes);
 await fastify.register(authRoutes);
@@ -44,6 +66,7 @@ await fastify.register(masterdataProductosRoutes, { prefix: '/api/masterdata/pro
 await fastify.register(masterdataRutasRoutes, { prefix: '/api/masterdata/rutas' });
 await fastify.register(imapRoutes, { prefix: '/api/imap' });
 await fastify.register(rutasRoutes, { prefix: '/api/rutas' });
+await fastify.register(printRoutes, { prefix: '/api/print' });
 
 // Start server
 const PORT = parseInt(process.env.PORT || '3001', 10);
