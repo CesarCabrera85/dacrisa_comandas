@@ -1,9 +1,11 @@
 /**
  * Event Registry Module
  * Centralized event logging to the eventos table
+ * Now with EventBus integration for SSE broadcasting
  */
 
 import prisma from './prisma.js';
+import { eventBus } from './event-emitter.js';
 
 export interface EventoInput {
   tipo: string;
@@ -14,12 +16,12 @@ export interface EventoInput {
 }
 
 /**
- * Register an event in the eventos table
+ * Register an event in the eventos table and emit via EventBus for SSE
  * @param evento Event data
  * @returns Created event record
  */
 export async function registerEvento(evento: EventoInput) {
-  return prisma.evento.create({
+  const createdEvento = await prisma.evento.create({
     data: {
       tipo: evento.tipo,
       entidad_tipo: evento.entidad_tipo,
@@ -29,6 +31,19 @@ export async function registerEvento(evento: EventoInput) {
       ts: new Date(),
     },
   });
+
+  // Emit event to EventBus for SSE broadcasting
+  eventBus.emitSSEEvent({
+    id: createdEvento.id,
+    ts: createdEvento.ts,
+    actor_user_id: createdEvento.actor_user_id,
+    tipo: createdEvento.tipo,
+    entidad_tipo: createdEvento.entidad_tipo,
+    entidad_id: createdEvento.entidad_id,
+    payload: createdEvento.payload as object,
+  });
+
+  return createdEvento;
 }
 
 /**
@@ -78,4 +93,13 @@ export const PARSER_EVENT_TYPES = {
   RUTA_COMPLETA_VERDE: 'RUTA_COMPLETA_VERDE',
   RUTA_RECOLECTADA: 'RUTA_RECOLECTADA',
   LOTE_CARRYOVER: 'LOTE_CARRYOVER',
+} as const;
+
+// Additional event types for SSE monitoring
+export const SSE_EVENT_TYPES = {
+  TURNO_INICIADO: 'TURNO_INICIADO',
+  TURNO_CERRADO: 'TURNO_CERRADO',
+  IMPRESION_REALIZADA: 'IMPRESION_REALIZADA',
+  PRODUCTOS_ACTIVATED: 'PRODUCTOS_ACTIVATED',
+  RUTAS_ACTIVATED: 'RUTAS_ACTIVATED',
 } as const;

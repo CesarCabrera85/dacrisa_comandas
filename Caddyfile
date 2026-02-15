@@ -1,0 +1,52 @@
+# DACRISA Comandas - Caddy Configuration
+# Automatic HTTPS with Let's Encrypt for production domains
+# Self-signed for localhost
+
+{$DOMAIN:localhost} {
+    # TLS configuration
+    # For localhost: uses internal self-signed cert
+    # For real domains: auto-obtains Let's Encrypt certificate
+    @localhost {
+        host localhost
+    }
+    tls {$ACME_EMAIL:internal}
+
+    # API routes - proxy to api service
+    handle /api/* {
+        reverse_proxy api:3001 {
+            # Disable buffering for SSE
+            flush_interval -1
+        }
+    }
+
+    # Upload files - proxy to api service
+    handle /uploads/* {
+        reverse_proxy api:3001
+    }
+
+    # Frontend - proxy to web service
+    handle {
+        reverse_proxy web:5173
+    }
+
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+
+    # Security headers
+    header {
+        # Prevent clickjacking
+        X-Frame-Options "SAMEORIGIN"
+        # Prevent MIME sniffing
+        X-Content-Type-Options "nosniff"
+        # XSS protection
+        X-XSS-Protection "1; mode=block"
+        # Remove server header
+        -Server
+    }
+
+    # Compression
+    encode gzip zstd
+}

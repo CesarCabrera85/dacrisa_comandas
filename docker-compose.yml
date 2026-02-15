@@ -1,49 +1,85 @@
+version: '3.8'
+
 services:
   db:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: dacrisa_db
     environment:
       POSTGRES_DB: dacrisa_comandas
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   api:
     build:
-      context: ./apps/api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/api/Dockerfile
     container_name: dacrisa_api
-    ports:
-      - "3001:3001"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/dacrisa_comandas
-      NODE_ENV: development
-      CODE_ENC_KEY: ${CODE_ENC_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
-      SESSION_SECRET: ${SESSION_SECRET:-supersecretkey123456789012345678}
-      CODE_LOOKUP_SECRET: ${CODE_LOOKUP_SECRET:-lookupsecret123456789012345678901}
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/dacrisa_comandas
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3001
+      BASE_URL: ${BASE_URL:-http://localhost:3001}
+      # Encryption secrets
+      CODE_ENC_KEY: ${CODE_ENC_KEY}
+      SESSION_SECRET: ${SESSION_SECRET}
+      CODE_LOOKUP_SECRET: ${CODE_LOOKUP_SECRET}
+      # IMAP configuration
+      IMAP_HOST: ${IMAP_HOST:-}
+      IMAP_PORT: ${IMAP_PORT:-993}
+      IMAP_USER: ${IMAP_USER:-}
+      IMAP_PASSWORD: ${IMAP_PASSWORD:-}
+      IMAP_FOLDER: ${IMAP_FOLDER:-INBOX}
+      IMAP_POLL_SECONDS: ${IMAP_POLL_SECONDS:-15}
+      IMAP_SECURE: ${IMAP_SECURE:-true}
+      # Fuzzy matching
+      FUZZY_MATCH_THRESHOLD: ${FUZZY_MATCH_THRESHOLD:-80}
+    volumes:
+      - ./uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
+    restart: unless-stopped
 
   web:
     build:
-      context: ./apps/web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/web/Dockerfile
     container_name: dacrisa_web
-    ports:
-      - "5173:5173"
     environment:
-      VITE_API_URL: http://api:3001
+      VITE_API_URL: ${VITE_API_URL:-/api}
     depends_on:
       - api
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: dacrisa_caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@localhost}
+    depends_on:
+      - api
+      - web
+    restart: unless-stopped
 
 volumes:
-  db_data:
+  postgres_data:
+  caddy_data:
+  caddy_config:
