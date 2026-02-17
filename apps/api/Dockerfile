@@ -17,8 +17,9 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy root package files
+# Copy root package files and tsconfig
 COPY package*.json ./
+COPY tsconfig.json ./
 COPY apps/api/package*.json ./apps/api/
 COPY packages/shared/package*.json ./packages/shared/
 

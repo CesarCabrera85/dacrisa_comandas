@@ -8,8 +8,9 @@ FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Copy root package files
+# Copy root package files and tsconfig
 COPY package*.json ./
+COPY tsconfig.json ./
 COPY apps/web/package*.json ./apps/web/
 COPY packages/shared/package*.json ./packages/shared/
 
