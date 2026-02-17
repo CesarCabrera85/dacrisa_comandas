@@ -1,5 +1,10 @@
 # DACRISA Comandas Web - Production Dockerfile
-FROM node:20-alpine AS builder
+# Using Debian bookworm-slim for consistency with API
+
+# ============================================
+# Builder stage
+# ============================================
+FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -21,8 +26,13 @@ RUN npm run build -w packages/shared
 # Build web app
 RUN npm run build -w apps/web
 
-# Production image - use lightweight server
-FROM node:20-alpine
+# ============================================
+# Production stage
+# ============================================
+FROM node:20-bookworm-slim AS production
+
+# Create non-root user for security
+RUN groupadd -r nodejs && useradd -r -g nodejs nodejs
 
 WORKDIR /app
 
@@ -31,6 +41,11 @@ RUN npm install -g serve
 
 # Copy built static files
 COPY --from=builder /app/apps/web/dist ./dist
+
+# Change ownership
+RUN chown -R nodejs:nodejs /app
+
+USER nodejs
 
 EXPOSE 5173
 
